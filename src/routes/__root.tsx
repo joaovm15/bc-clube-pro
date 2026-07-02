@@ -94,6 +94,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "BC CLUBE" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "BC CLUBE — Gestão Inteligente para Barbearias" },
+      { name: "description", content: "BC CLUBE is a premium SaaS application for intelligent barbershop management." },
+      { property: "og:description", content: "BC CLUBE is a premium SaaS application for intelligent barbershop management." },
+      { name: "twitter:description", content: "BC CLUBE is a premium SaaS application for intelligent barbershop management." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/47f61f4c-568c-4633-82de-3dc90e1767d3/id-preview-be739e3f--1d525347-d20d-416e-940a-0759d165bb77.lovable.app-1782993760022.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/47f61f4c-568c-4633-82de-3dc90e1767d3/id-preview-be739e3f--1d525347-d20d-416e-940a-0759d165bb77.lovable.app-1782993760022.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
