@@ -1,6 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type DayHours = { closed: boolean; open: string; close: string };
+export type BusinessHours = Record<
+  "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun",
+  DayHours
+>;
+
 export type Barbershop = {
   id: string;
   owner_id: string;
@@ -8,6 +14,7 @@ export type Barbershop = {
   phone: string | null;
   address: string | null;
   logo_url: string | null;
+  business_hours: BusinessHours | null;
 };
 
 async function ensureBarbershop(): Promise<Barbershop> {
