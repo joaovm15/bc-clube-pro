@@ -5,6 +5,7 @@ import {
   Users,
   UserCog,
   Scissors,
+  Package,
   DollarSign,
   Receipt,
   BarChart3,
@@ -32,6 +33,7 @@ const main = [
   { title: "Clientes", to: "/app/clientes", icon: Users },
   { title: "Funcionários", to: "/app/funcionarios", icon: UserCog },
   { title: "Serviços", to: "/app/servicos", icon: Scissors },
+  { title: "Estoque", to: "/app/estoque", icon: Package },
 ];
 
 const finance = [
