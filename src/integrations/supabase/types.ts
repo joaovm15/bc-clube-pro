@@ -90,6 +90,7 @@ export type Database = {
       barbershops: {
         Row: {
           address: string | null
+          business_hours: Json | null
           created_at: string
           id: string
           logo_url: string | null
@@ -100,6 +101,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          business_hours?: Json | null
           created_at?: string
           id?: string
           logo_url?: string | null
@@ -110,6 +112,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          business_hours?: Json | null
           created_at?: string
           id?: string
           logo_url?: string | null
