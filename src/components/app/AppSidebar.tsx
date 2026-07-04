@@ -5,6 +5,7 @@ import {
   Users,
   UserCog,
   Scissors,
+  Package,
   DollarSign,
   Receipt,
   BarChart3,
