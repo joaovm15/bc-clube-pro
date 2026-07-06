@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Bell, LogOut, Search } from "lucide-react";
 
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/app")({
 
 function AppLayout() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
 
@@ -41,6 +43,8 @@ function AppLayout() {
   }, []);
 
   async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
