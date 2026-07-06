@@ -163,16 +163,20 @@ function SignUpForm() {
     if (!p.success) return toast.error(p.error.issues[0].message);
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: name },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: `${window.location.origin}/app`,
       },
     });
     setLoading(false);
     if (error) return toast.error(error.message);
+    if (!data.session) {
+      toast.success("Conta criada! Verifique seu email para confirmar o cadastro.");
+      return;
+    }
     toast.success("Conta criada! Bem-vindo ao BC CLUBE.");
     navigate({ to: "/app" });
   }
