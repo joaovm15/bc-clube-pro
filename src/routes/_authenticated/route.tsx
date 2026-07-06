@@ -5,9 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 // session in localStorage — the server can't see it.
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
+    if (error || !data.user) {
+      throw redirect({ to: "/auth", search: { redirect: location.href } });
+    }
     return { user: data.user };
   },
   component: () => <Outlet />,

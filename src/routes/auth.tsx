@@ -111,7 +111,7 @@ function AuthPage() {
       await ensureProfileAndShop();
       const stored = window.sessionStorage.getItem("bc_auth_redirect");
       window.sessionStorage.removeItem("bc_auth_redirect");
-      navigate({ to: getSafeRedirect(stored || redirectTo), replace: true });
+      navigate({ to: getSafeRedirect(stored || redirectTo) as "/app", replace: true });
     });
     return () => {
       active = false;
@@ -172,7 +172,7 @@ function SignInForm({ redirectTo }: { redirectTo: string }) {
     if (error) return toast.error(getAuthErrorMessage(error.message));
     await ensureProfileAndShop();
     toast.success("Bem-vindo de volta!");
-    navigate({ to: redirectTo, replace: true });
+    navigate({ to: redirectTo as "/app", replace: true });
   }
 
   async function onForgot() {
@@ -258,7 +258,7 @@ function SignUpForm({ redirectTo }: { redirectTo: string }) {
     }
     await ensureProfileAndShop();
     toast.success("Conta criada! Bem-vindo ao BC CLUBE.");
-    navigate({ to: redirectTo, replace: true });
+    navigate({ to: redirectTo as "/app", replace: true });
   }
 
   return (
