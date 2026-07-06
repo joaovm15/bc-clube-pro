@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -31,15 +31,93 @@ export const Route = createFileRoute("/auth")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  beforeLoad: async () => {
-    if (typeof window === "undefined") return;
-    const { data } = await supabase.auth.getSession();
-    if (data.session) throw redirect({ to: "/app" });
-  },
+  validateSearch: z.object({ redirect: z.string().optional() }),
   component: AuthPage,
 });
 
+function getSafeRedirect(value?: string | null) {
+  if (!value) return "/app";
+  try {
+    const parsed = new URL(value, window.location.origin);
+    if (parsed.origin !== window.location.origin) return "/app";
+    const path = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    return path.startsWith("/auth") ? "/app" : path;
+  } catch {
+    return value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/auth")
+      ? value
+      : "/app";
+  }
+}
+
+function getAuthErrorMessage(message: string) {
+  const m = message.toLowerCase();
+  if (m.includes("invalid login credentials")) {
+    return "E-mail ou senha incorretos. Verifique os dados e tente novamente.";
+  }
+  if (m.includes("email not confirmed")) {
+    return "Confirme seu e-mail antes de entrar.";
+  }
+  if (m.includes("user already registered") || m.includes("already registered")) {
+    return "Já existe uma conta com este e-mail. Entre com sua senha ou recupere o acesso.";
+  }
+  if (m.includes("password") && m.includes("weak")) {
+    return "Use uma senha mais forte para proteger sua conta.";
+  }
+  return message || "Não foi possível concluir a autenticação. Tente novamente.";
+}
+
+async function ensureProfileAndShop() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) return;
+  const user = data.user;
+  const fullName =
+    (user.user_metadata?.full_name as string | undefined) ||
+    (user.user_metadata?.name as string | undefined) ||
+    user.email?.split("@")[0] ||
+    "Usuário";
+  const avatarUrl =
+    (user.user_metadata?.avatar_url as string | undefined) ||
+    (user.user_metadata?.picture as string | undefined) ||
+    null;
+
+  await supabase.from("profiles").upsert(
+    { id: user.id, full_name: fullName, avatar_url: avatarUrl },
+    { onConflict: "id", ignoreDuplicates: false },
+  );
+
+  const existing = await supabase
+    .from("barbershops")
+    .select("id")
+    .eq("owner_id", user.id)
+    .limit(1)
+    .maybeSingle();
+  if (!existing.data && !existing.error) {
+    await supabase.from("barbershops").insert({
+      owner_id: user.id,
+      name: `Barbearia ${fullName.split(" ")[0] || "BC"}`,
+    });
+  }
+}
+
 function AuthPage() {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const redirectTo = getSafeRedirect(search.redirect);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!active || !data.user) return;
+      await ensureProfileAndShop();
+      const stored = window.sessionStorage.getItem("bc_auth_redirect");
+      window.sessionStorage.removeItem("bc_auth_redirect");
+      navigate({ to: getSafeRedirect(stored || redirectTo), replace: true });
+    });
+    return () => {
+      active = false;
+    };
+  }, [navigate, redirectTo]);
+
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 py-16">
       <BarberBackdrop />
@@ -54,10 +132,10 @@ function AuthPage() {
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
             </TabsList>
             <TabsContent value="signin">
-              <SignInForm />
+              <SignInForm redirectTo={redirectTo} />
             </TabsContent>
             <TabsContent value="signup">
-              <SignUpForm />
+              <SignUpForm redirectTo={redirectTo} />
             </TabsContent>
           </Tabs>
           <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-silver/50">
@@ -65,7 +143,7 @@ function AuthPage() {
             ou
             <div className="flex-1 h-px bg-border" />
           </div>
-          <GoogleButton />
+          <GoogleButton redirectTo={redirectTo} />
         </div>
         <p className="mt-6 text-center text-xs text-silver/50">
           Ao continuar você concorda com os Termos de Uso e a Política de Privacidade.
@@ -75,7 +153,7 @@ function AuthPage() {
   );
 }
 
-function SignInForm() {
+function SignInForm({ redirectTo }: { redirectTo: string }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -91,9 +169,10 @@ function SignInForm() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(getAuthErrorMessage(error.message));
+    await ensureProfileAndShop();
     toast.success("Bem-vindo de volta!");
-    navigate({ to: "/app" });
+    navigate({ to: redirectTo, replace: true });
   }
 
   async function onForgot() {
@@ -102,7 +181,7 @@ function SignInForm() {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(getAuthErrorMessage(error.message));
     toast.success("Enviamos um link de recuperação para o seu email.");
   }
 
@@ -146,7 +225,7 @@ function SignInForm() {
   );
 }
 
-function SignUpForm() {
+function SignUpForm({ redirectTo }: { redirectTo: string }) {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -168,17 +247,18 @@ function SignUpForm() {
       password,
       options: {
         data: { full_name: name },
-        emailRedirectTo: `${window.location.origin}/app`,
+        emailRedirectTo: `${window.location.origin}${redirectTo}`,
       },
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(getAuthErrorMessage(error.message));
     if (!data.session) {
       toast.success("Conta criada! Verifique seu email para confirmar o cadastro.");
       return;
     }
+    await ensureProfileAndShop();
     toast.success("Conta criada! Bem-vindo ao BC CLUBE.");
-    navigate({ to: "/app" });
+    navigate({ to: redirectTo, replace: true });
   }
 
   return (
@@ -221,10 +301,11 @@ function SignUpForm() {
   );
 }
 
-function GoogleButton() {
+function GoogleButton({ redirectTo }: { redirectTo: string }) {
   const [loading, setLoading] = useState(false);
   async function onClick() {
     setLoading(true);
+    window.sessionStorage.setItem("bc_auth_redirect", redirectTo);
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin + "/auth",
     });
@@ -234,7 +315,8 @@ function GoogleButton() {
       return;
     }
     if (result.redirected) return;
-    window.location.href = "/app";
+    await ensureProfileAndShop();
+    window.location.href = redirectTo;
   }
   return (
     <Button
