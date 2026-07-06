@@ -31,15 +31,16 @@ export const Route = createFileRoute("/auth")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  validateSearch: z.object({ redirect: z.string().optional() }),
+  validateSearch: (search) => z.object({ redirect: z.string().optional() }).parse(search),
   component: AuthPage,
 });
 
 function getSafeRedirect(value?: string | null) {
   if (!value) return "/app";
   try {
-    const parsed = new URL(value, window.location.origin);
-    if (parsed.origin !== window.location.origin) return "/app";
+    const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost";
+    const parsed = new URL(value, origin);
+    if (parsed.origin !== origin) return "/app";
     const path = `${parsed.pathname}${parsed.search}${parsed.hash}`;
     return path.startsWith("/auth") ? "/app" : path;
   } catch {
