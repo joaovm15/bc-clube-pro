@@ -206,8 +206,8 @@ function DespesasPage() {
           </p>
         </div>
       ) : (
-        <div className="bc-card overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bc-card overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-border/50 text-left text-[10px] uppercase tracking-widest text-silver/50">
                 <th className="px-4 py-3">Data</th>
