@@ -156,6 +156,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <Toaster position="top-right" />
+      <PwaInstaller />
     </QueryClientProvider>
   );
 }
